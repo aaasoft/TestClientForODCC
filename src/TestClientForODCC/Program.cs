@@ -37,7 +37,8 @@ var httpClent = new HttpClient()
             password = CryptographyHelper.ComputeMD5Hash(password)
         }
     };
-    var formContent = JsonContent.Create(loginRequest);
+
+    var formContent = JsonContent.Create(loginRequest, ModelsJsonSerializerContext.Default.ODCCRequestLoginRequest);
 
     Console.WriteLine("General:");
     Console.WriteLine("  Request URL: " + apiUrl);
@@ -80,7 +81,7 @@ var httpClent = new HttpClient()
 
     try
     {
-        var loginResult = JsonSerializer.Deserialize<ODCCResponse<LoginResponse>>(responseStr);
+        var loginResult = JsonSerializer.Deserialize(responseStr, ModelsJsonSerializerContext.Default.ODCCResponseLoginResponse);
         Console.WriteLine($"Login result: error_code: {loginResult.error_code}, error_msg: {loginResult.error_msg}, login_time: {loginResult.data.login_time}, timeout: {loginResult.data.timeout}");
     }
     catch (Exception ex)
@@ -90,3 +91,4 @@ var httpClent = new HttpClient()
     }
 }
 Console.WriteLine("Test done.");
+Console.ReadLine();
