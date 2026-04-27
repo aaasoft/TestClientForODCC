@@ -1,9 +1,10 @@
 ﻿using System.Net.Http.Json;
 using System.Text.Json;
+using Quick.Build;
 using TestClientForODCC.Model;
 using TestClientForODCC.Utils;
 
-Console.WriteLine("Welcome to use TestClientForODCC");
+Console.WriteLine("欢迎使用ODCC测试客户端");
 string url, user, password;
 
 #if DEBUG
@@ -11,11 +12,11 @@ url = "http://127.0.0.1:3002";
 user = "admin";
 password = "admin";
 #else
-    Console.Write("ODCC Url:");
+    Console.Write("URL地址:");
     url = Console.ReadLine();
-    Console.Write("User:");
+    Console.Write("用户名:");
     user = Console.ReadLine();
-    Console.Write("Password:");
+    Console.Write("密码:");
     password = Console.ReadLine();
 #endif
 while (url.EndsWith("/"))
@@ -26,7 +27,7 @@ var httpClent = new HttpClient()
 };
 //登录
 {
-    Console.WriteLine("Begin login...");
+    Console.WriteLine("正在登录...");
     var apiUrl = $"{url}/north/login";
     var loginRequest = new ODCCRequest<LoginRequest>()
     {
@@ -37,58 +38,35 @@ var httpClent = new HttpClient()
             password = CryptographyHelper.ComputeMD5Hash(password)
         }
     };
-
-    var formContent = JsonContent.Create(loginRequest, ModelsJsonSerializerContext.Default.ODCCRequestLoginRequest);
-
-    Console.WriteLine("General:");
-    Console.WriteLine("  Request URL: " + apiUrl);
-    Console.WriteLine("  Request Method: " + "POST");
-    Console.WriteLine("Request Headers:");
-    foreach (var header in formContent.Headers)
-    {
-        Console.WriteLine($"  {header.Key}: {string.Join(",", header.Value)}");
-    }
-    Console.WriteLine("Form Data:");
-    Console.WriteLine("  " + await formContent.ReadAsStringAsync());
-
-    HttpResponseMessage rep;
-    string responseStr;
     try
     {
-        rep = await httpClent.PostAsync(apiUrl, formContent);
-        Console.WriteLine("Response Headers:");
-        foreach (var header in rep.Headers)
-        {
-            Console.WriteLine($"  {header.Key}: {string.Join(",", header.Value)}");
-        }
+        var loginResponse = await HttpUtils.Post(httpClent, apiUrl, loginRequest,
+            ModelsJsonSerializerContext.Default.ODCCRequestLoginRequest,
+            ModelsJsonSerializerContext.Default.ODCCResponseLoginResponse);
+        Console.WriteLine($"登录结果: error_code: {loginResponse.error_code}, error_msg: {loginResponse.error_msg}, login_time: {loginResponse.data.login_time}, timeout: {loginResponse.data.timeout}");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Post error." + ex.ToString());
-        return;
-    }
-    try
-    {
-        Console.WriteLine("Response:");
-        responseStr = await rep.Content.ReadAsStringAsync();
-        Console.WriteLine($"  {responseStr}");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Read data from server error." + ex.ToString());
-        return;
-    }
-
-    try
-    {
-        var loginResult = JsonSerializer.Deserialize(responseStr, ModelsJsonSerializerContext.Default.ODCCResponseLoginResponse);
-        Console.WriteLine($"Login result: error_code: {loginResult.error_code}, error_msg: {loginResult.error_msg}, login_time: {loginResult.data.login_time}, timeout: {loginResult.data.timeout}");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Deserialize json to object error.{ex}");
+        Console.WriteLine($"将JSON数据反序列化为对象时出错，原因：{ex}");
         return;
     }
 }
-Console.WriteLine("Test done.");
-Console.ReadLine();
+
+while (true)
+{
+    Console.WriteLine("请选择：");
+    var selectId = QbSelect.ArrowSelect(new Dictionary<string, string>()
+    {
+        ["1"] = "在线数据获取",
+        ["0"] = "退出",
+    }.ToArray());
+    switch (selectId)
+    {
+        case "0":
+            return;
+        case "1":
+            {
+                break;
+            }
+    }
+}
