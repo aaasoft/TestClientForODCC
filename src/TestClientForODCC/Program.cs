@@ -1,5 +1,4 @@
-﻿using System.Net.Http.Json;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Quick.Build;
 using TestClientForODCC.Model;
 using TestClientForODCC.Utils;
@@ -8,7 +7,7 @@ Console.WriteLine("欢迎使用ODCC测试客户端");
 string url, user, password;
 
 #if DEBUG
-url = "http://127.0.0.1:3002";
+url = "http://server.ylservice365.com:3002";
 user = "admin";
 password = "admin";
 #else
@@ -44,6 +43,8 @@ var httpClent = new HttpClient()
             ModelsJsonSerializerContext.Default2.ODCCRequestLoginRequest,
             ModelsJsonSerializerContext.Default2.ODCCResponseLoginResponse);
         Console.WriteLine($"响应: error_code: {response.error_code}, error_msg: {response.error_msg}");
+        if (response.error_code != 0)
+            throw new IOException($"响应: error_code: {response.error_code}, error_msg: {response.error_msg}");
         Console.WriteLine($"登录结果: login_time: {response.data.login_time}, timeout: {response.data.timeout}");
     }
     catch (Exception ex)
@@ -55,6 +56,7 @@ var httpClent = new HttpClient()
 
 while (true)
 {
+    Console.WriteLine("------------------");
     Console.WriteLine("请选择：");
     var selectId = QbSelect.ArrowSelect(new Dictionary<string, string>()
     {
@@ -80,11 +82,11 @@ while (true)
                 };
                 try
                 {
-                    var response = await HttpUtils.Post(httpClent, apiUrl, request,
-                        ModelsJsonSerializerContext.Default2.ODCCRequestGetConfigRequest,
-                        ModelsJsonSerializerContext.Default2.ODCCResponseGetConfigResponse);
-                    Console.WriteLine($"响应: error_code: {response.error_code}, error_msg: {response.error_msg}");
-                    Console.WriteLine($"配置: {JsonSerializer.Serialize(response.data.nodes, ModelsJsonSerializerContext.Default2.SpaceInfoArray)}");
+                    var str = await HttpUtils.Post(httpClent, apiUrl, request,
+                        ModelsJsonSerializerContext.Default2.ODCCRequestGetConfigRequest);
+                    var outFile = $"config_get_response_{DateTime.Now:yyyyMMdd_HHmmss}.log";
+                    File.WriteAllText(outFile, str);
+                    Console.WriteLine($"获取配置返回响应数据已写入文件：{outFile}");
                 }
                 catch (Exception ex)
                 {
@@ -120,6 +122,8 @@ while (true)
                         ModelsJsonSerializerContext.Default2.ODCCRequestGetOnlineDataRequest,
                         ModelsJsonSerializerContext.Default2.ODCCResponseGetOnlineDataResponse);
                     Console.WriteLine($"响应: error_code: {response.error_code}, error_msg: {response.error_msg}");
+                    if (response.error_code != 0)
+                        break;
                     Console.WriteLine($"数据: {JsonSerializer.Serialize(response.data.devices, ModelsJsonSerializerContext.Default2.DeviceDataArray)}");
                 }
                 catch (Exception ex)

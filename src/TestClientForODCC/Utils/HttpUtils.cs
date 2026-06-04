@@ -6,7 +6,7 @@ namespace TestClientForODCC.Utils;
 
 public class HttpUtils
 {
-    public static async Task<TResponseData> Post<TRequestData, TResponseData>(HttpClient httpClient, string apiUrl, TRequestData requestData, JsonTypeInfo<TRequestData> requestDataTypeInfo, JsonTypeInfo<TResponseData> responseDataTypeInfo)
+    public static async Task<string> Post<TRequestData>(HttpClient httpClient, string apiUrl, TRequestData requestData, JsonTypeInfo<TRequestData> requestDataTypeInfo)
     {
         var formContent = JsonContent.Create(requestData, requestDataTypeInfo);
 
@@ -29,7 +29,13 @@ public class HttpUtils
             Console.WriteLine("Response Headers:");
             foreach (var header in rep.Headers)
             {
-                Console.WriteLine($"  {header.Key}: {string.Join(",", header.Value)}");
+                var headerKey = header.Key;
+                var headerValue = string.Join(",", header.Value);
+                if (headerKey == "token")
+                {
+                    httpClient.DefaultRequestHeaders.Add(headerKey, headerValue);
+                }
+                Console.WriteLine($"  {headerKey}: {headerValue}");
             }
         }
         catch (Exception ex)
@@ -41,12 +47,17 @@ public class HttpUtils
             Console.WriteLine("Response:");
             responseStr = await rep.Content.ReadAsStringAsync();
             Console.WriteLine($"  {responseStr}");
+            return responseStr;
         }
         catch (Exception ex)
         {
             throw new IOException("从服务器读取数据错误", ex);
         }
+    }
 
+    public static async Task<TResponseData> Post<TRequestData, TResponseData>(HttpClient httpClient, string apiUrl, TRequestData requestData, JsonTypeInfo<TRequestData> requestDataTypeInfo, JsonTypeInfo<TResponseData> responseDataTypeInfo)
+    {
+        var responseStr = await Post(httpClient, apiUrl, requestData, requestDataTypeInfo);
         try
         {
             return JsonSerializer.Deserialize(responseStr, responseDataTypeInfo);
